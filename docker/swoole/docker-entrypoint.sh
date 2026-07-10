@@ -17,16 +17,19 @@ if [ -f composer.json ]; then
     fi
 fi
 
-if [ ! -f config/autoload/swoole.local.php ]; then
-    echo "==> Writing config/autoload/swoole.local.php"
-    cat > config/autoload/swoole.local.php <<'PHP'
+if [ ! -f config/autoload/swoole.global.php ]; then
+    echo "==> Writing config/autoload/swoole.global.php"
+    cat > config/autoload/swoole.global.php <<'PHP'
 <?php
 
 declare(strict_types=1);
 
-use Mezzio\Swoole\ConfigProvider;
-
-return array_merge((new ConfigProvider())(), [
+// Mezzio\Swoole\ConfigProvider is already registered directly in
+// config/config.php's ConfigAggregator list, so it must not be re-invoked and
+// merged here: doing so would re-include its full `dependencies` array and
+// silently override any application-level dependency overrides that load
+// after it (e.g. a custom Swoole\Http\Server::class factory).
+return [
     'mezzio-swoole' => [
         'swoole-http-server' => [
             // Bind to all interfaces so the server is reachable from the host.
@@ -34,7 +37,7 @@ return array_merge((new ConfigProvider())(), [
             'port' => 8080,
         ],
     ],
-]);
+];
 PHP
 fi
 
